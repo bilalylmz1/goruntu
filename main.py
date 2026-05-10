@@ -25,7 +25,7 @@ def to_photoimage(img_array, max_size=400):
 ISLEMLER = {
     "1. Gri Dönüşüm":              ("gri",       []),
     "2. Binary Dönüşüm":           ("binary",    [("Eşik (0-255)", "128")]),
-    "3. Görüntü Döndürme":         ("dondur",    [("Açı (-180/+180)", "45")]),
+    "3. Görüntü Döndürme":         ("dondur",    [("Açı (90/180/270)", "90")]),
     "4. Görüntü Kırpma":           ("kirp",      [("x1", "0"), ("y1", "0"), ("x2", "200"), ("y2", "200")]),
     "5. Yakınlaştırma/Uzaklaştırma":("olcekle",  [("Ölçek (0.5-3.0)", "1.5")]),
     "6. Renk Uzayı Dönüşümü":      ("renk",      [("Mod (hsv/ycbcr)", "hsv")]),
@@ -45,17 +45,19 @@ class Uygulama:
         self.pencere = pencere
         pencere.title("Görüntü İşleme Görselleştirme")
         pencere.configure(bg="#2b2b2b")
-        self.img = None          # cv2 BGR görüntü
-        self.photo_ori = None    # Tkinter PhotoImage (referans tut)
-        self.photo_son = None
-        self.entry_widgets = []  # dinamik Entry kutuları
+        self.img        = None   # cv2 BGR görüntü (1. resim)
+        self.img2       = None   # cv2 BGR görüntü (2. resim — yalnızca aritmetik)
+        self.photo_ori  = None
+        self.photo_ori2 = None
+        self.photo_son  = None
+        self.entry_widgets = []
 
         self._arayuz_olustur()
 
     def _arayuz_olustur(self):
-        p = self.pencere
-        bg = "#2b2b2b"
-        fg = "#ffffff"
+        p   = self.pencere
+        bg  = "#2b2b2b"
+        fg  = "#ffffff"
 
         # ── Üst çubuk ────────────────────────────────────────────────────────
         ust = tk.Frame(p, bg=bg, pady=6)
@@ -76,16 +78,24 @@ class Uygulama:
                   ).pack(side="left", padx=4)
 
         # ── Görüntü panelleri ─────────────────────────────────────────────────
-        panel = tk.Frame(p, bg=bg)
-        panel.pack(fill="both", expand=True, padx=10, pady=6)
+        self.panel = tk.Frame(p, bg=bg)
+        self.panel.pack(fill="both", expand=True, padx=10, pady=6)
 
-        sol = tk.Frame(panel, bg="#1e1e1e", bd=1, relief="solid")
+        # 1. resim paneli
+        sol = tk.Frame(self.panel, bg="#1e1e1e", bd=1, relief="solid")
         sol.pack(side="left", fill="both", expand=True, padx=4)
         tk.Label(sol, text="Orijinal", bg="#1e1e1e", fg="#aaaaaa").pack()
         self.sol_label = tk.Label(sol, bg="#1e1e1e")
         self.sol_label.pack(expand=True)
 
-        sag = tk.Frame(panel, bg="#1e1e1e", bd=1, relief="solid")
+        # 2. resim paneli (yalnızca aritmetik modunda görünür)
+        self.ikinci_panel = tk.Frame(self.panel, bg="#1e1e1e", bd=1, relief="solid")
+        tk.Label(self.ikinci_panel, text="2. Resim", bg="#1e1e1e", fg="#aaaaaa").pack()
+        self.ikinci_label = tk.Label(self.ikinci_panel, bg="#1e1e1e")
+        self.ikinci_label.pack(expand=True)
+
+        # Sonuç paneli
+        sag = tk.Frame(self.panel, bg="#1e1e1e", bd=1, relief="solid")
         sag.pack(side="left", fill="both", expand=True, padx=4)
         tk.Label(sag, text="Sonuç", bg="#1e1e1e", fg="#aaaaaa").pack()
         self.sag_label = tk.Label(sag, bg="#1e1e1e")
@@ -98,20 +108,32 @@ class Uygulama:
         self.parametre_guncelle()
 
     def parametre_guncelle(self, *_):
-        """Seçilen işleme göre Entry kutularını yeniden oluştur."""
+        """Seçilen işleme göre Entry kutularını ve ikinci resim alanını yeniden oluştur."""
         for w in self.param_cerceve.winfo_children():
             w.destroy()
         self.entry_widgets.clear()
 
         islem_adi = self.secim.get()
-        _, parametreler = ISLEMLER[islem_adi]
+        modul_adi, parametreler = ISLEMLER[islem_adi]
+
+        # Aritmetik seçiliyse: ikinci resim panelini ve yükleme butonunu göster
+        if modul_adi == "aritmetik":
+            self.ikinci_panel.pack(side="left", fill="both", expand=True, padx=4,
+                                   before=self.panel.winfo_children()[-1])
+            tk.Button(self.param_cerceve, text="📂 2. Resim Yükle",
+                      command=self.resim_yukle2,
+                      bg="#c0392b", fg="white", relief="flat", padx=10, pady=4
+                      ).pack(side="left", padx=8)
+        else:
+            self.ikinci_panel.pack_forget()
+            self.img2 = None
 
         for etiket, varsayilan in parametreler:
-            satir = tk.Frame(self.param_cerceve, bg="#2b2b2b")
-            satir.pack(side="left", padx=8)
-            tk.Label(satir, text=etiket, bg="#2b2b2b", fg="#cccccc", font=("Helvetica", 9)
+            satir_frame = tk.Frame(self.param_cerceve, bg="#2b2b2b")
+            satir_frame.pack(side="left", padx=8)
+            tk.Label(satir_frame, text=etiket, bg="#2b2b2b", fg="#cccccc", font=("Helvetica", 9)
                      ).pack(anchor="w")
-            e = tk.Entry(satir, width=12, bg="#3c3c3c", fg="white", insertbackground="white")
+            e = tk.Entry(satir_frame, width=12, bg="#3c3c3c", fg="white", insertbackground="white")
             e.insert(0, varsayilan)
             e.pack()
             self.entry_widgets.append((etiket, e))
@@ -129,6 +151,19 @@ class Uygulama:
         self.sol_label.configure(image=self.photo_ori)
         self.sag_label.configure(image="")
 
+    def resim_yukle2(self):
+        """Yalnızca aritmetik işlem için ikinci resmi yükler."""
+        dosya = filedialog.askopenfilename(
+            filetypes=[("Görüntü dosyaları", "*.jpg *.jpeg *.png *.bmp *.tiff")])
+        if not dosya:
+            return
+        self.img2 = cv2.imread(dosya)
+        if self.img2 is None:
+            messagebox.showerror("Hata", "İkinci görüntü yüklenemedi.")
+            return
+        self.photo_ori2 = to_photoimage(self.img2)
+        self.ikinci_label.configure(image=self.photo_ori2)
+
     def uygula(self):
         if self.img is None:
             messagebox.showwarning("Uyarı", "Önce bir resim yükleyin.")
@@ -140,10 +175,8 @@ class Uygulama:
         # Parametreleri oku
         kwargs = {}
         try:
-            param_adlari = [et for et, _ in parametreler]
             for (etiket, entry), (et, _) in zip(self.entry_widgets, parametreler):
-                deger = entry.get().strip()
-                # Parametre adını belirle
+                deger  = entry.get().strip()
                 anahtar = self._etiket_to_anahtar(modul_adi, et)
                 kwargs[anahtar] = deger
         except Exception as ex:
@@ -153,8 +186,15 @@ class Uygulama:
         # Modülü yükle ve uygula
         try:
             modul = importlib.import_module(modul_adi)
-            importlib.reload(modul)  # değişiklikler anında yansısın
-            if kwargs:
+            importlib.reload(modul)
+
+            if modul_adi == "aritmetik":
+                # Aritmetik: iki resim gerekli
+                if self.img2 is None:
+                    messagebox.showwarning("Uyarı", "Aritmetik işlem için 2. resmi yükleyin.")
+                    return
+                sonuc = modul.uygula(self.img, self.img2, **self._tip_donustur(modul_adi, kwargs))
+            elif kwargs:
                 sonuc = modul.uygula(self.img, **self._tip_donustur(modul_adi, kwargs))
             else:
                 sonuc = modul.uygula(self.img)
@@ -169,7 +209,7 @@ class Uygulama:
         """Etiket -> modül fonksiyon parametresi adı eşlemesi."""
         harita = {
             "binary":    {"Eşik (0-255)": "esik"},
-            "dondur":    {"Açı (-180/+180)": "aci"},
+            "dondur":    {"Açı (90/180/270)": "aci"},
             "kirp":      {"x1": "x1", "y1": "y1", "x2": "x2", "y2": "y2"},
             "olcekle":   {"Ölçek (0.5-3.0)": "olcek"},
             "renk":      {"Mod (hsv/ycbcr)": "mod"},

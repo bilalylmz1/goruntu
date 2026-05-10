@@ -1,26 +1,54 @@
 import numpy as np
-from gri import uygula as to_gray
 
-def uygula(img, mod='ekle', alfa=0.5):
+
+def resim_toplama(resim_matrisi1, resim_matrisi2):
+    satir, sutun, kanal_sayisi = resim_matrisi1.shape
+    sonuc_img = np.zeros((satir, sutun, kanal_sayisi), dtype=np.uint8)
+
+    for i in range(satir):
+        for j in range(sutun):
+            for kanal in range(kanal_sayisi):
+                toplam = int(resim_matrisi1[i, j, kanal]) + int(resim_matrisi2[i, j, kanal])
+                if toplam > 255:
+                    sonuc_img[i, j, kanal] = 255
+                else:
+                    sonuc_img[i, j, kanal] = toplam
+    return sonuc_img
+
+
+def resim_bolme(resim_matrisi1, resim_matrisi2):
+    satir, sutun, kanal_sayisi = resim_matrisi1.shape
+    sonuc_img = np.zeros((satir, sutun, kanal_sayisi), dtype=np.uint8)
+
+    for i in range(satir):
+        for j in range(sutun):
+            for kanal in range(kanal_sayisi):
+                pay   = resim_matrisi1[i, j, kanal]
+                payda = resim_matrisi2[i, j, kanal]
+
+                if payda == 0:
+                    sonuc_img[i, j, kanal] = int(pay / 1)
+                else:
+                    deger = pay / payda
+                    if deger > 255:
+                        deger = 255
+                    sonuc_img[i, j, kanal] = int(deger)
+    return sonuc_img
+
+
+def uygula(img1, img2, mod='ekle', alfa=0.5):
     """
-    Aritmetik işlemler.
-    mod='ekle'  -> C = alfa*A + (1-alfa)*B  (A: gri, B: negatifi)
-    mod='bol'   -> piksel değerleri 2'ye bölünür
+    Aritmetik islemler iki resim arasinda.
+    mod='ekle' -> resim_toplama: C[k] = img1[k] + img2[k]  (255'te kesilir)
+    mod='bol'  -> resim_bolme:   C[k] = img1[k] / img2[k]  (payda=0 ise 1 kullan)
     """
-    gray = to_gray(img)
-    h, w = gray.shape
-    sonuc = np.zeros((h, w), dtype=np.uint8)
-    alfa = float(alfa)
-    for i in range(h):
-        for j in range(w):
-            if mod == 'ekle':
-                negatif = 255 - gray[i, j]
-                deger = alfa * gray[i, j] + (1 - alfa) * negatif
-            else:  # bol
-                deger = gray[i, j] / 2.0
-            if deger > 255:
-                deger = 255
-            elif deger < 0:
-                deger = 0
-            sonuc[i, j] = int(deger)
-    return sonuc
+    # Iki goruntu farkli boyuttaysa kucuk olani al
+    satir = min(img1.shape[0], img2.shape[0])
+    sutun = min(img1.shape[1], img2.shape[1])
+    resim_matrisi1 = img1[:satir, :sutun]
+    resim_matrisi2 = img2[:satir, :sutun]
+
+    if mod == 'ekle':
+        return resim_toplama(resim_matrisi1, resim_matrisi2)
+    else:  # bol
+        return resim_bolme(resim_matrisi1, resim_matrisi2)

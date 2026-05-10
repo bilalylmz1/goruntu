@@ -1,20 +1,39 @@
 import numpy as np
-from gri import uygula as to_gray
 
-def uygula(img, aci=45):
-    """2D rotasyon matrisi + en yakın komşu interpolasyonu ile döndürme."""
-    gray = to_gray(img)
-    rad = float(aci) * np.pi / 180.0
-    cos_a, sin_a = np.cos(rad), np.sin(rad)
-    h, w = gray.shape
-    cx, cy = w / 2, h / 2
-    sonuc = np.zeros_like(gray)
-    for yi in range(h):
-        for xi in range(w):
-            # Ters dönüşüm: hedef piksel -> kaynak piksel
-            x0 = cos_a * (xi - cx) + sin_a * (yi - cy) + cx
-            y0 = -sin_a * (xi - cx) + cos_a * (yi - cy) + cy
-            xr, yr = int(round(x0)), int(round(y0))
-            if 0 <= xr < w and 0 <= yr < h:
-                sonuc[yi, xi] = gray[yr, xr]
-    return sonuc
+def uygula(img, aci=90):
+    """
+    Goruntu dondurme (renkli, piksel piksel dongu).
+    90'in katlari desteklenir: 90, 180, 270 derece.
+    """
+    satir, sutun, kanal_sayisi = img.shape
+    derece = int(aci) % 360     # 0-359 araligina normalize et
+
+    if derece == 90:
+        # 90 derece saat yonu: boyutlar (sutun, satir) yer degistirir
+        sonuc_img = np.zeros((sutun, satir, kanal_sayisi), dtype=np.uint8)
+        for i in range(satir):
+            for j in range(sutun):
+                sonuc_img[j, (satir - 1) - i] = img[i, j]
+
+    elif derece == 180:
+        # 180 derece: boyutlar ayni kalir, pikseller hem yatay hem dikey ters doner
+        sonuc_img = np.zeros((satir, sutun, kanal_sayisi), dtype=np.uint8)
+        for i in range(satir):
+            for j in range(sutun):
+                sonuc_img[(satir - 1) - i, (sutun - 1) - j] = img[i, j]
+
+    elif derece == 270:
+        # 270 derece saat yonu: boyutlar (sutun, satir) yer degistirir
+        sonuc_img = np.zeros((sutun, satir, kanal_sayisi), dtype=np.uint8)
+        for i in range(satir):
+            for j in range(sutun):
+                sonuc_img[(sutun - 1) - j, i] = img[i, j]
+
+    else:
+        # 0 veya tanimsiz derece: orijinali don
+        sonuc_img = np.zeros((satir, sutun, kanal_sayisi), dtype=np.uint8)
+        for i in range(satir):
+            for j in range(sutun):
+                sonuc_img[i, j] = img[i, j]
+
+    return sonuc_img

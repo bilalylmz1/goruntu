@@ -1,33 +1,55 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from gri import uygula as to_gray
 
 def uygula(img):
-    """Histogram analizi ve germe. Matplotlib ile grafik açar, geri germe sonucu döner."""
-    gray = to_gray(img).astype(np.float64)
-    # Histogram hesapla (sıfırdan)
-    hist = np.zeros(256, dtype=np.int64)
-    for val in gray.flatten():
-        hist[int(val)] += 1
+    """Histogram analizi ve germe. Matplotlib ile grafik acar, geri germe sonucu doner."""
+    import matplotlib.pyplot as plt
 
-    # Histogram germe
-    mn, mx = gray.min(), gray.max()
-    if mx == mn:
-        geri = gray.astype(np.uint8)
+    gri_img = to_gray(img)
+    satir, sutun = gri_img.shape
+
+    # --- Adim 1: Orijinal histogram hesapla (sifirdan sayac ile) ---
+    hist = [0] * 256
+    for i in range(satir):
+        for j in range(sutun):
+            hist[gri_img[i, j]] += 1
+
+    # --- Adim 2: Min ve max piksel degerlerini bul ---
+    min_deger = 255
+    maks_deger = 0
+    for i in range(satir):
+        for j in range(sutun):
+            if gri_img[i, j] < min_deger:
+                min_deger = gri_img[i, j]
+            if gri_img[i, j] > maks_deger:
+                maks_deger = gri_img[i, j]
+
+    # --- Adim 3: Histogram germe uygula ---
+    # Formul: yeni = (piksel - min) / (maks - min) * 255
+    gerilmis_img = np.zeros((satir, sutun), dtype=np.uint8)
+    if maks_deger == min_deger:
+        for i in range(satir):
+            for j in range(sutun):
+                gerilmis_img[i, j] = gri_img[i, j]
     else:
-        geri = ((gray - mn) / (mx - mn) * 255).astype(np.uint8)
+        for i in range(satir):
+            for j in range(sutun):
+                deger = int((gri_img[i, j] - min_deger) / (maks_deger - min_deger) * 255)
+                gerilmis_img[i, j] = deger
 
-    hist_geri = np.zeros(256, dtype=np.int64)
-    for val in geri.flatten():
-        hist_geri[int(val)] += 1
+    # --- Adim 4: Gerilmis histogram hesapla ---
+    hist_gerilmis = [0] * 256
+    for i in range(satir):
+        for j in range(sutun):
+            hist_gerilmis[gerilmis_img[i, j]] += 1
 
-    # Grafik göster
+    # --- Grafik goster ---
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
     ax1.bar(range(256), hist, width=1, color='steelblue')
     ax1.set_title('Orijinal Histogram')
-    ax2.bar(range(256), hist_geri, width=1, color='tomato')
-    ax2.set_title('Gerilmiş Histogram')
+    ax2.bar(range(256), hist_gerilmis, width=1, color='tomato')
+    ax2.set_title('Gerilmis Histogram')
     plt.tight_layout()
     plt.show()
 
-    return geri
+    return gerilmis_img
