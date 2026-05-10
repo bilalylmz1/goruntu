@@ -27,17 +27,17 @@ ISLEMLER = {
     "2. Binary Dönüşüm":           ("binary",    [("Eşik (0-255)", "128")]),
     "3. Görüntü Döndürme":         ("dondur",    [("Açı (90/180/270)", "90")]),
     "4. Görüntü Kırpma":           ("kirp",      [("x1", "0"), ("y1", "0"), ("x2", "200"), ("y2", "200")]),
-    "5. Yakınlaştırma/Uzaklaştırma":("olcekle",  [("Ölçek (0.5-3.0)", "1.5")]),
+    "5. Yakınlaştırma/Uzaklaştırma":("Goruntu_yakinlastir_uzaklastir",  [("Ölçek (0.5-3.0)", "1.5")]),
     "6. Renk Uzayı Dönüşümü":      ("renk",      [("Mod (hsv/ycbcr)", "hsv")]),
     "7. Histogram Analizi & Germe":("histogram",  []),
-    "8. Aritmetik İşlemler":       ("aritmetik", [("Mod (ekle/bol)", "ekle"), ("Alfa (0-1)", "0.5")]),
+    "8. Aritmetik İşlemler":       ("aritmetik", [("Mod (ekle/bol)", "ekle")]),
     "9. Kontrast Artırma":         ("kontrast",  [("Alfa", "1.5"), ("Beta", "0")]),
     "10. Konvolüsyon (Mean)":      ("konvol",    [("Çekirdek boyutu (3/5/7/9/11)", "3")]),
     "11. Tek Eşikleme":            ("esikle",    [("Eşik (0-255)", "128")]),
     "12. Kenar Bulma (Prewitt)":   ("kenar",     []),
     "13. Gürültü & Filtreleme":    ("gurultu",   [("Gürültü oranı (0-1)", "0.05")]),
     "14. Unsharp Maskeleme":       ("unsharp",   [("k katsayısı", "1.0")]),
-    "15. Morfolojik İşlemler":     ("morfoloji", [("İşlem (d/a/ac/ka)", "d")]),
+    "15. Morfolojik İşlemler":     ("morfolojik_islemler", [("İşlem (d/a/ac/ka)", "d"), ("Eşik (0-255)", "128")]),
 }
 
 class Uygulama:
@@ -202,8 +202,11 @@ class Uygulama:
             messagebox.showerror("İşlem Hatası", str(ex))
             return
 
-        self.photo_son = to_photoimage(sonuc)
-        self.sag_label.configure(image=self.photo_son)
+        if modul_adi == "Goruntu_yakinlastir_uzaklastir":
+            self._yakinlastirma_penceresi_goster(sonuc)
+        else:
+            self.photo_son = to_photoimage(sonuc)
+            self.sag_label.configure(image=self.photo_son)
 
     def _etiket_to_anahtar(self, modul, etiket):
         """Etiket -> modül fonksiyon parametresi adı eşlemesi."""
@@ -211,15 +214,15 @@ class Uygulama:
             "binary":    {"Eşik (0-255)": "esik"},
             "dondur":    {"Açı (90/180/270)": "aci"},
             "kirp":      {"x1": "x1", "y1": "y1", "x2": "x2", "y2": "y2"},
-            "olcekle":   {"Ölçek (0.5-3.0)": "olcek"},
+            "Goruntu_yakinlastir_uzaklastir": {"Ölçek (0.5-3.0)": "olcek"},
             "renk":      {"Mod (hsv/ycbcr)": "mod"},
-            "aritmetik": {"Mod (ekle/bol)": "mod", "Alfa (0-1)": "alfa"},
+            "aritmetik": {"Mod (ekle/bol)": "mod"},
             "kontrast":  {"Alfa": "alfa", "Beta": "beta"},
             "konvol":    {"Çekirdek boyutu (3/5/7/9/11)": "boyut"},
             "esikle":    {"Eşik (0-255)": "esik"},
             "gurultu":   {"Gürültü oranı (0-1)": "oran"},
             "unsharp":   {"k katsayısı": "k"},
-            "morfoloji": {"İşlem (d/a/ac/ka)": "islem"},
+            "morfolojik_islemler": {"İşlem (d/a/ac/ka)": "islem", "Eşik (0-255)": "esik"},
         }
         return harita.get(modul, {}).get(etiket, etiket)
 
@@ -236,6 +239,82 @@ class Uygulama:
                 except ValueError:
                     sonuc[k] = v
         return sonuc
+
+    def _yakinlastirma_penceresi_goster(self, sonuc):
+        """Yakınlaştırma/uzaklaştırma sonucunu gerçek boyutunda ayrı pencerede gösterir."""
+        pencere = tk.Toplevel(self.pencere)
+        pencere.configure(bg="#1e1e1e")
+
+        ori_h, ori_w = self.img.shape[:2]
+        son_h, son_w = sonuc.shape[:2]
+        olcek_x = son_w / ori_w
+        olcek_y = son_h / ori_h
+
+        pencere.title(f"Yakınlaştırma Sonucu  |  {ori_w}×{ori_h}  →  {son_w}×{son_h}  (×{olcek_x:.2f})")
+
+        # Ekran boyutunu al, pencereyi sığdır
+        ekran_gen = self.pencere.winfo_screenwidth()
+        ekran_yuk = self.pencere.winfo_screenheight()
+        kenar_bosluk = 80  # başlık çubuğu + bilgi alanı için
+
+        # Her panel için maksimum gösterim alanı (ekranın yarısına sığdır)
+        max_panel_gen = (ekran_gen - 60) // 2
+        max_panel_yuk = ekran_yuk - kenar_bosluk - 100
+
+        def panel_boyutla(img_array):
+            """Görüntüyü panel sınırlarına sığacak şekilde PIL'e çevirir."""
+            if img_array.dtype != np.uint8:
+                img_array = np.clip(img_array, 0, 255).astype(np.uint8)
+            if img_array.ndim == 2:
+                pil = Image.fromarray(img_array, mode='L')
+            else:
+                pil = Image.fromarray(img_array[:, :, ::-1])
+            w, h = pil.size
+            oran = min(max_panel_gen / w, max_panel_yuk / h, 1.0)  # büyütme yok
+            if oran < 1.0:
+                pil = pil.resize((int(w * oran), int(h * oran)), Image.NEAREST)
+            return ImageTk.PhotoImage(pil), pil.size
+
+        photo_ori, (go_w, go_h) = panel_boyutla(self.img)
+        photo_son, (gs_w, gs_h) = panel_boyutla(sonuc)
+
+        # Pencere boyutu: iki panel yan yana + boşluklar
+        pen_gen = go_w + gs_w + 60
+        pen_yuk = max(go_h, gs_h) + kenar_bosluk
+        # Ekrana sığdır
+        pen_gen = min(pen_gen, ekran_gen - 40)
+        pen_yuk = min(pen_yuk, ekran_yuk - 60)
+
+        # Ekranın ortasına konumlandır
+        x = (ekran_gen - pen_gen) // 2
+        y = (ekran_yuk - pen_yuk) // 2
+        pencere.geometry(f"{pen_gen}x{pen_yuk}+{x}+{y}")
+
+        # İçerik çerçevesi
+        cerceve = tk.Frame(pencere, bg="#1e1e1e")
+        cerceve.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Orijinal panel
+        sol = tk.Frame(cerceve, bg="#2b2b2b", bd=1, relief="solid")
+        sol.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        tk.Label(sol, text=f"Orijinal  {ori_w}×{ori_h}",
+                 bg="#2b2b2b", fg="#aaaaaa", font=("Helvetica", 10, "bold")).pack(pady=(6, 2))
+        lbl_ori = tk.Label(sol, image=photo_ori, bg="#2b2b2b")
+        lbl_ori.image = photo_ori  # referans tut
+        lbl_ori.pack(padx=6, pady=(0, 6))
+
+        # Sonuç paneli
+        sag = tk.Frame(cerceve, bg="#2b2b2b", bd=1, relief="solid")
+        sag.pack(side="left", fill="both", expand=True, padx=(5, 0))
+        tk.Label(sag, text=f"Sonuç  {son_w}×{son_h}  (ölçek ×{olcek_x:.2f})",
+                 bg="#2b2b2b", fg="#27ae60", font=("Helvetica", 10, "bold")).pack(pady=(6, 2))
+        lbl_son = tk.Label(sag, image=photo_son, bg="#2b2b2b")
+        lbl_son.image = photo_son  # referans tut
+        lbl_son.pack(padx=6, pady=(0, 6))
+
+        # Ana panelde de küçük önizleme göster
+        self.photo_son = to_photoimage(sonuc)
+        self.sag_label.configure(image=self.photo_son)
 
 
 if __name__ == "__main__":

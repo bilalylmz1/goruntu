@@ -36,7 +36,7 @@ def resim_bolme(resim_matrisi1, resim_matrisi2):
     return sonuc_img
 
 
-def uygula(img1, img2, mod='ekle', alfa=0.5):
+def uygula(img1, img2, mod='ekle'):
     """
     Aritmetik islemler iki resim arasinda.
     mod='ekle' -> resim_toplama: C[k] = img1[k] + img2[k]  (255'te kesilir)

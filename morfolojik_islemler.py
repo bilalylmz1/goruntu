@@ -1,11 +1,11 @@
 import numpy as np
 from gri import uygula as to_gray
 
-def _binary(gri_img):
-    """Gri goruntuyu sabit esikle (128) binary goruntüye donustur"""
+def _binary(gri_img, esik=128):
+    """Gri goruntuyu verilen esikle binary goruntüye donustur"""
     satir, sutun = gri_img.shape
     binary_img = np.zeros((satir, sutun), dtype=np.uint8)
-    esik_degeri = 128
+    esik_degeri = int(esik)
     for i in range(satir):
         for j in range(sutun):
             if gri_img[i, j] >= esik_degeri:
@@ -46,16 +46,17 @@ def _asindır(binary_img):
                 sonuc_img[i, j] = 255
     return sonuc_img
 
-def uygula(img, islem='d'):
+def uygula(img, islem='d', esik=128):
     """
     Morfolojik islemler (3x3 yapisal eleman, binary uzerinde):
     islem='d'  -> Genisleme (dilation)
     islem='a'  -> Asindirma (erosion)
     islem='ac' -> Acma (opening)  = once asindirma, sonra genisleme
     islem='ka' -> Kapama (closing) = once genisleme, sonra asindirma
+    esik       -> Binary donusumu icin esik degeri (0-255)
     """
     gri_img = to_gray(img)
-    binary_img = _binary(gri_img)
+    binary_img = _binary(gri_img, esik)
 
     if islem == 'd':
         return _genisle(binary_img)

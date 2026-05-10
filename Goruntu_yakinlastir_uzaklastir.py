@@ -7,7 +7,7 @@ def uygula(img, olcek=1.5):
     satir, sutun = img.shape[:2]
     yeni_satir = int(satir * olcek)
     yeni_sutun = int(sutun * olcek)
-    kanal= 1
+    kanal = 1 if img.ndim == 2 else img.shape[2]
 
     if kanal == 1:
         sonuc_img = np.zeros((yeni_satir, yeni_sutun), dtype=img.dtype)
