@@ -90,11 +90,8 @@ def uygula(img, oran=0.05):
                 mean_img[i, j, k]   = kanal_mean[i, j]
                 median_img[i, j, k] = kanal_median[i, j]
 
-    # --- Adim 4: Uc sonucu yan yana birlestir ---
-    sonuc_img = np.zeros((satir, sutun * 3, kanal_sayisi), dtype=np.uint8)
-    for i in range(satir):
-        for j in range(sutun):
-            sonuc_img[i, j]             = gurultulu_img[i, j]
-            sonuc_img[i, j + sutun]     = mean_img[i, j]
-            sonuc_img[i, j + 2 * sutun] = median_img[i, j]
-    return sonuc_img
+    return {
+        'Gürültülü':        gurultulu_img,
+        'Ortalama Filtre':  mean_img,
+        'Medyan Filtre':    median_img,
+    }

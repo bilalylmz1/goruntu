@@ -28,16 +28,17 @@ ISLEMLER = {
     "3. Görüntü Döndürme":         ("dondur",    [("Açı (90/180/270)", "90")]),
     "4. Görüntü Kırpma":           ("kirp",      [("x1", "0"), ("y1", "0"), ("x2", "200"), ("y2", "200")]),
     "5. Yakınlaştırma/Uzaklaştırma":("Goruntu_yakinlastir_uzaklastir",  [("Ölçek (0.5-3.0)", "1.5")]),
-    "6. Renk Uzayı Dönüşümü":      ("renk",      [("Mod (hsv/ycbcr)", "hsv")]),
-    "7. Histogram Analizi & Germe":("histogram",  []),
-    "8. Aritmetik İşlemler":       ("aritmetik", [("Mod (ekle/bol)", "ekle")]),
-    "9. Kontrast Artırma":         ("kontrast",  [("Alfa", "1.5"), ("Beta", "0")]),
-    "10. Konvolüsyon (Mean)":      ("konvol",    [("Çekirdek boyutu (3/5/7/9/11)", "3")]),
-    "11. Tek Eşikleme":            ("esikle",    [("Eşik (0-255)", "128")]),
-    "12. Kenar Bulma (Prewitt)":   ("kenar",     []),
-    "13. Gürültü & Filtreleme":    ("gurultu",   [("Gürültü oranı (0-1)", "0.05")]),
-    "14. Unsharp Maskeleme":       ("unsharp",   [("k katsayısı", "1.0")]),
-    "15. Morfolojik İşlemler":     ("morfolojik_islemler", [("Eşik (0-255)", "128")]),
+    "6. Renk Uzayı Dönüşümü":      ("renk",      [("Mod", "hsv", ["hsv", "ycbcr"])]),
+    "7. Histogram Analizi":        ("histogram",        []),
+    "8. Histogram Germe":          ("histogram_germe",  []),
+    "9. Aritmetik İşlemler":       ("aritmetik", [("Mod (ekle/bol)", "ekle")]),
+    "10. Kontrast Artırma":        ("kontrast",  [("Alfa", "1.5"), ("Beta", "0")]),
+    "11. Konvolüsyon (Mean)":      ("konvol",    [("Çekirdek boyutu (3/5/7/9/11)", "3")]),
+    "12. Tek Eşikleme":            ("esikle",    [("Eşik (0-255)", "128")]),
+    "13. Kenar Bulma (Prewitt)":   ("kenar",     []),
+    "14. Gürültü & Filtreleme":    ("gurultu",   [("Gürültü oranı (0-1)", "0.05")]),
+    "15. Unsharp Maskeleme":       ("unsharp",   [("k katsayısı", "1.0")]),
+    "16. Morfolojik İşlemler":     ("morfolojik_islemler", [("Eşik (0-255)", "128")]),
 }
 
 class Uygulama:
@@ -128,13 +129,21 @@ class Uygulama:
             self.ikinci_panel.pack_forget()
             self.img2 = None
 
-        for etiket, varsayilan in parametreler:
+        for param in parametreler:
+            etiket     = param[0]
+            varsayilan = param[1]
+            secenekler = param[2] if len(param) == 3 else None
+
             satir_frame = tk.Frame(self.param_cerceve, bg="#2b2b2b")
             satir_frame.pack(side="left", padx=8)
-            tk.Label(satir_frame, text=etiket, bg="#2b2b2b", fg="#cccccc", font=("Helvetica", 9)
-                     ).pack(anchor="w")
-            e = tk.Entry(satir_frame, width=12, bg="#3c3c3c", fg="white", insertbackground="white")
-            e.insert(0, varsayilan)
+            tk.Label(satir_frame, text=etiket, bg="#2b2b2b", fg="#cccccc",
+                     font=("Helvetica", 9)).pack(anchor="w")
+            if secenekler:
+                e = ttk.Combobox(satir_frame, values=secenekler, width=10, state="readonly")
+                e.set(varsayilan)
+            else:
+                e = tk.Entry(satir_frame, width=12, bg="#3c3c3c", fg="white", insertbackground="white")
+                e.insert(0, varsayilan)
             e.pack()
             self.entry_widgets.append((etiket, e))
 
@@ -175,9 +184,9 @@ class Uygulama:
         # Parametreleri oku
         kwargs = {}
         try:
-            for (etiket, entry), (et, _) in zip(self.entry_widgets, parametreler):
-                deger  = entry.get().strip()
-                anahtar = self._etiket_to_anahtar(modul_adi, et)
+            for (etiket, entry), param in zip(self.entry_widgets, parametreler):
+                deger   = entry.get().strip()
+                anahtar = self._etiket_to_anahtar(modul_adi, param[0])
                 kwargs[anahtar] = deger
         except Exception as ex:
             messagebox.showerror("Parametre Hatası", str(ex))
@@ -202,7 +211,16 @@ class Uygulama:
             messagebox.showerror("İşlem Hatası", str(ex))
             return
 
-        if modul_adi == "morfolojik_islemler":
+        if modul_adi == "gurultu":
+            self._renk_penceresi_goster(sonuc, "Gürültü & Filtreleme")
+        elif modul_adi == "renk":
+            self._renk_penceresi_goster(sonuc, "Renk Uzayı Kanalları")
+        elif modul_adi == "histogram_germe":
+            self.photo_ori = to_photoimage(sonuc['Gri Orijinal'])
+            self.sol_label.configure(image=self.photo_ori)
+            self.photo_son = to_photoimage(sonuc['Gerilmis'])
+            self.sag_label.configure(image=self.photo_son)
+        elif modul_adi == "morfolojik_islemler":
             self._morfoloji_penceresi_goster(sonuc)
         elif modul_adi == "Goruntu_yakinlastir_uzaklastir":
             self._yakinlastirma_penceresi_goster(sonuc)
@@ -217,7 +235,7 @@ class Uygulama:
             "dondur":    {"Açı (90/180/270)": "aci"},
             "kirp":      {"x1": "x1", "y1": "y1", "x2": "x2", "y2": "y2"},
             "Goruntu_yakinlastir_uzaklastir": {"Ölçek (0.5-3.0)": "olcek"},
-            "renk":      {"Mod (hsv/ycbcr)": "mod"},
+            "renk":      {"Mod": "mod"},
             "aritmetik": {"Mod (ekle/bol)": "mod"},
             "kontrast":  {"Alfa": "alfa", "Beta": "beta"},
             "konvol":    {"Çekirdek boyutu (3/5/7/9/11)": "boyut"},
@@ -349,6 +367,34 @@ class Uygulama:
 
         # Ana panelde genişleme sonucunu önizleme olarak göster
         self.photo_son = to_photoimage(sonuclar['Genişleme'])
+        self.sag_label.configure(image=self.photo_son)
+
+    def _renk_penceresi_goster(self, sonuclar, baslik="Kanal Görünümleri"):
+        """Verilen görüntü sözlüğünü etiketli, yan yana ayrı pencerede gösterir."""
+        pencere = tk.Toplevel(self.pencere)
+        pencere.title(baslik)
+        pencere.configure(bg="#1e1e1e")
+
+        self._renk_photos = []  # PhotoImage referanslarını tut
+
+        for idx, (baslik, kanal_img) in enumerate(sonuclar.items()):
+            cerceve = tk.Frame(pencere, bg="#2b2b2b", bd=1, relief="solid")
+            cerceve.grid(row=0, column=idx, padx=6, pady=6, sticky="nsew")
+
+            tk.Label(cerceve, text=baslik, bg="#2b2b2b", fg="#aaaaaa",
+                     font=("Helvetica", 10, "bold")).pack(pady=(6, 2))
+
+            photo = to_photoimage(kanal_img, max_size=320)
+            self._renk_photos.append(photo)
+            lbl = tk.Label(cerceve, image=photo, bg="#2b2b2b")
+            lbl.image = photo
+            lbl.pack(padx=6, pady=(0, 6))
+
+            pencere.columnconfigure(idx, weight=1)
+
+        # Ana panelde ilk kanalı önizleme olarak göster
+        ilk_kanal = list(sonuclar.values())[0]
+        self.photo_son = to_photoimage(ilk_kanal)
         self.sag_label.configure(image=self.photo_son)
 
 

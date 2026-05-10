@@ -1,55 +1,32 @@
 import numpy as np
-from gri import uygula as to_gray
 
 def uygula(img):
-    """Histogram analizi ve germe. Matplotlib ile grafik acar, geri germe sonucu doner."""
+    """RGB kanal bazli histogram analizi. Her kanal icin ayri piksel dagilimini gosterir."""
     import matplotlib.pyplot as plt
 
-    gri_img = to_gray(img)
-    satir, sutun = gri_img.shape
+    satir, sutun = img.shape[:2]
 
-    # --- Adim 1: Orijinal histogram hesapla (sifirdan sayac ile) ---
-    hist = [0] * 256
+    # --- Her kanal icin ayri sayac (OpenCV BGR sirasi: 0=B, 1=G, 2=R) ---
+    hist_b = [0] * 256
+    hist_g = [0] * 256
+    hist_r = [0] * 256
+
     for i in range(satir):
         for j in range(sutun):
-            hist[gri_img[i, j]] += 1
+            hist_b[img[i, j, 0]] += 1
+            hist_g[img[i, j, 1]] += 1
+            hist_r[img[i, j, 2]] += 1
 
-    # --- Adim 2: Min ve max piksel degerlerini bul ---
-    min_deger = 255
-    maks_deger = 0
-    for i in range(satir):
-        for j in range(sutun):
-            if gri_img[i, j] < min_deger:
-                min_deger = gri_img[i, j]
-            if gri_img[i, j] > maks_deger:
-                maks_deger = gri_img[i, j]
-
-    # --- Adim 3: Histogram germe uygula ---
-    # Formul: yeni = (piksel - min) / (maks - min) * 255
-    gerilmis_img = np.zeros((satir, sutun), dtype=np.uint8)
-    if maks_deger == min_deger:
-        for i in range(satir):
-            for j in range(sutun):
-                gerilmis_img[i, j] = gri_img[i, j]
-    else:
-        for i in range(satir):
-            for j in range(sutun):
-                deger = int((gri_img[i, j] - min_deger) / (maks_deger - min_deger) * 255)
-                gerilmis_img[i, j] = deger
-
-    # --- Adim 4: Gerilmis histogram hesapla ---
-    hist_gerilmis = [0] * 256
-    for i in range(satir):
-        for j in range(sutun):
-            hist_gerilmis[gerilmis_img[i, j]] += 1
-
-    # --- Grafik goster ---
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
-    ax1.bar(range(256), hist, width=1, color='steelblue')
-    ax1.set_title('Orijinal Histogram')
-    ax2.bar(range(256), hist_gerilmis, width=1, color='tomato')
-    ax2.set_title('Gerilmis Histogram')
+    # --- Grafik: uc kanal tek eksende, renkleriyle ---
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(range(256), hist_r, color='red',   alpha=0.8, label='Kirmizi (R)')
+    ax.plot(range(256), hist_g, color='green', alpha=0.8, label='Yesil (G)')
+    ax.plot(range(256), hist_b, color='blue',  alpha=0.8, label='Mavi (B)')
+    ax.set_title('RGB Kanal Histogramlari')
+    ax.set_xlabel('Piksel Degeri (0-255)')
+    ax.set_ylabel('Piksel Sayisi')
+    ax.legend()
     plt.tight_layout()
     plt.show()
 
-    return gerilmis_img
+    return img

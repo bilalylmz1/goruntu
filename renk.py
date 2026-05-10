@@ -84,11 +84,8 @@ def uygula(img, mod='hsv'):
                 kanal2_img[i, j] = int(Cb * 255)
                 kanal3_img[i, j] = int(Cr * 255)
 
-    # --- Uc kanali yan yana birlestir ---
-    sonuc_img = np.zeros((satir, sutun * 3), dtype=np.uint8)
-    for i in range(satir):
-        for j in range(sutun):
-            sonuc_img[i, j]             = kanal1_img[i, j]
-            sonuc_img[i, j + sutun]     = kanal2_img[i, j]
-            sonuc_img[i, j + 2 * sutun] = kanal3_img[i, j]
-    return sonuc_img
+    # --- Kanallari etiketleriyle sozluk olarak dondur ---
+    if mod == 'hsv':
+        return {'H': kanal1_img, 'S': kanal2_img, 'V': kanal3_img}
+    else:
+        return {'Y': kanal1_img, 'Cb': kanal2_img, 'Cr': kanal3_img}
