@@ -23,7 +23,7 @@ def _konvol(gri_img, kernel, satir, sutun):
             toplam = 0.0
             for ki in range(3):
                 for kj in range(3):
-                    toplam += gri_img[i - 1 + ki, j - 1 + kj] * kernel[ki][kj]
+                    toplam += float(gri_img[i - 1 + ki, j - 1 + kj]) * kernel[ki][kj]
             sonuc_img[i, j] = toplam
     return sonuc_img
 

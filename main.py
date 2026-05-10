@@ -37,7 +37,7 @@ ISLEMLER = {
     "12. Kenar Bulma (Prewitt)":   ("kenar",     []),
     "13. Gürültü & Filtreleme":    ("gurultu",   [("Gürültü oranı (0-1)", "0.05")]),
     "14. Unsharp Maskeleme":       ("unsharp",   [("k katsayısı", "1.0")]),
-    "15. Morfolojik İşlemler":     ("morfolojik_islemler", [("İşlem (d/a/ac/ka)", "d"), ("Eşik (0-255)", "128")]),
+    "15. Morfolojik İşlemler":     ("morfolojik_islemler", [("Eşik (0-255)", "128")]),
 }
 
 class Uygulama:
@@ -202,7 +202,9 @@ class Uygulama:
             messagebox.showerror("İşlem Hatası", str(ex))
             return
 
-        if modul_adi == "Goruntu_yakinlastir_uzaklastir":
+        if modul_adi == "morfolojik_islemler":
+            self._morfoloji_penceresi_goster(sonuc)
+        elif modul_adi == "Goruntu_yakinlastir_uzaklastir":
             self._yakinlastirma_penceresi_goster(sonuc)
         else:
             self.photo_son = to_photoimage(sonuc)
@@ -222,7 +224,7 @@ class Uygulama:
             "esikle":    {"Eşik (0-255)": "esik"},
             "gurultu":   {"Gürültü oranı (0-1)": "oran"},
             "unsharp":   {"k katsayısı": "k"},
-            "morfolojik_islemler": {"İşlem (d/a/ac/ka)": "islem", "Eşik (0-255)": "esik"},
+            "morfolojik_islemler": {"Eşik (0-255)": "esik"},
         }
         return harita.get(modul, {}).get(etiket, etiket)
 
@@ -314,6 +316,39 @@ class Uygulama:
 
         # Ana panelde de küçük önizleme göster
         self.photo_son = to_photoimage(sonuc)
+        self.sag_label.configure(image=self.photo_son)
+
+    def _morfoloji_penceresi_goster(self, sonuclar):
+        """Dört morfolojik işlem sonucunu 2×2 grid'de ayrı pencerede gösterir."""
+        pencere = tk.Toplevel(self.pencere)
+        pencere.title("Morfolojik İşlemler")
+        pencere.configure(bg="#1e1e1e")
+
+        basliklar = ['Genişleme', 'Aşınma', 'Açma', 'Kapama']
+
+        self._morfoloji_photos = []  # PhotoImage referanslarını tut
+
+        for idx, baslik in enumerate(basliklar):
+            satir_idx = idx // 2
+            sutun_idx = idx % 2
+
+            cerceve = tk.Frame(pencere, bg="#2b2b2b", bd=1, relief="solid")
+            cerceve.grid(row=satir_idx, column=sutun_idx, padx=6, pady=6, sticky="nsew")
+
+            tk.Label(cerceve, text=baslik, bg="#2b2b2b", fg="#aaaaaa",
+                     font=("Helvetica", 10, "bold")).pack(pady=(6, 2))
+
+            photo = to_photoimage(sonuclar[baslik], max_size=320)
+            self._morfoloji_photos.append(photo)
+            lbl = tk.Label(cerceve, image=photo, bg="#2b2b2b")
+            lbl.image = photo
+            lbl.pack(padx=6, pady=(0, 6))
+
+        pencere.columnconfigure(0, weight=1)
+        pencere.columnconfigure(1, weight=1)
+
+        # Ana panelde genişleme sonucunu önizleme olarak göster
+        self.photo_son = to_photoimage(sonuclar['Genişleme'])
         self.sag_label.configure(image=self.photo_son)
 
 

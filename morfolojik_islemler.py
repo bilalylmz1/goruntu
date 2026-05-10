@@ -46,25 +46,21 @@ def _asindır(binary_img):
                 sonuc_img[i, j] = 255
     return sonuc_img
 
-def uygula(img, islem='d', esik=128):
+def uygula(img, esik=128):
     """
-    Morfolojik islemler (3x3 yapisal eleman, binary uzerinde):
-    islem='d'  -> Genisleme (dilation)
-    islem='a'  -> Asindirma (erosion)
-    islem='ac' -> Acma (opening)  = once asindirma, sonra genisleme
-    islem='ka' -> Kapama (closing) = once genisleme, sonra asindirma
-    esik       -> Binary donusumu icin esik degeri (0-255)
+    Dört morfolojik islemi hesaplar ve sozlük olarak döndürür:
+      'Genişleme' -> dilation  (3x3 komsulukta en az bir 255 varsa genislet)
+      'Aşınma'    -> erosion   (3x3 komsulukta tamami 255 ise koru)
+      'Açma'      -> opening   = once asindirma, sonra genisleme
+      'Kapama'    -> closing   = once genisleme, sonra asindirma
+    esik: binary donusumu icin esik degeri (0-255)
     """
     gri_img = to_gray(img)
     binary_img = _binary(gri_img, esik)
 
-    if islem == 'd':
-        return _genisle(binary_img)
-    elif islem == 'a':
-        return _asindır(binary_img)
-    elif islem == 'ac':
-        # Acma: asindirma -> genisleme
-        return _genisle(_asindır(binary_img))
-    else:  # 'ka'
-        # Kapama: genisleme -> asindirma
-        return _asindır(_genisle(binary_img))
+    return {
+        'Genişleme': _genisle(binary_img),
+        'Aşınma':    _asindır(binary_img),
+        'Açma':      _genisle(_asindır(binary_img)),
+        'Kapama':    _asindır(_genisle(binary_img)),
+    }
