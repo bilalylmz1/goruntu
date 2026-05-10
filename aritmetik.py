@@ -37,12 +37,6 @@ def resim_bolme(resim_matrisi1, resim_matrisi2):
 
 
 def uygula(img1, img2, mod='ekle'):
-    """
-    Aritmetik islemler iki resim arasinda.
-    mod='ekle' -> resim_toplama: C[k] = img1[k] + img2[k]  (255'te kesilir)
-    mod='bol'  -> resim_bolme:   C[k] = img1[k] / img2[k]  (payda=0 ise 1 kullan)
-    """
-    # Iki goruntu farkli boyuttaysa kucuk olani al
     satir = min(img1.shape[0], img2.shape[0])
     sutun = min(img1.shape[1], img2.shape[1])
     resim_matrisi1 = img1[:satir, :sutun]
@@ -50,5 +44,5 @@ def uygula(img1, img2, mod='ekle'):
 
     if mod == 'ekle':
         return resim_toplama(resim_matrisi1, resim_matrisi2)
-    else:  # bol
+    else:
         return resim_bolme(resim_matrisi1, resim_matrisi2)

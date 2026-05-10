@@ -1,7 +1,6 @@
 import numpy as np
 
 def uygula(img):
-    """Agirlikli ortalama ile gri donusum: 0.299*R + 0.587*G + 0.114*B"""
     satir, sutun = img.shape[:2]
     gri_img = np.zeros((satir, sutun), dtype=np.uint8)
     for i in range(satir):

@@ -2,22 +2,16 @@ import numpy as np
 from gri import uygula as to_gray
 
 def uygula(img):
-    """
-    Gri donusum sonrasi yuzdelik histogram germe (%1-%99).
-    Sonuc: {'Gri Orijinal': gri_img, 'Gerilmis': gerilmis_img}
-    """
     import matplotlib.pyplot as plt
 
     gri_img = to_gray(img)
     satir, sutun = gri_img.shape
 
-    # --- Adim 1: Orijinal histogram ---
     hist = [0] * 256
     for i in range(satir):
         for j in range(sutun):
             hist[int(gri_img[i, j])] += 1
 
-    # --- Adim 2: %1 alt ve %99 ust siniri bul ---
     toplam = satir * sutun
     kesme  = toplam // 100
 
@@ -37,7 +31,6 @@ def uygula(img):
             high_cut = v
             break
 
-    # --- Adim 3: Germe uygula ---
     gerilmis_img = np.zeros((satir, sutun), dtype=np.uint8)
     hist_sonra   = [0] * 256
     aralik = high_cut - low_cut
@@ -55,7 +48,6 @@ def uygula(img):
             gerilmis_img[i, j] = yeni
             hist_sonra[yeni] += 1
 
-    # --- Grafik ---
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
     ax1.bar(range(256), hist,       width=1, color='steelblue')
     ax1.set_title('Gri Orijinal Histogram')

@@ -2,11 +2,9 @@ import numpy as np
 from gri import uygula as to_gray
 
 def uygula(img, x1=0, y1=0, x2=100, y2=100):
-    """Goruntu uzerinde piksel piksel gezinerek (x1,y1)-(x2,y2) bolgesini kirpar."""
     x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
     satir, sutun = img.shape[:2]
 
-    # Koordinatlari goruntu sinirlarinda tut
     if x1 < 0:
         x1 = 0
     if x1 > sutun - 1:

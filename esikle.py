@@ -2,7 +2,6 @@ import numpy as np
 from gri import uygula as to_gray
 
 def uygula(img, esik=128):
-    """Tek esikleme: piksel >= esik -> 255, degilse -> 0"""
     gri_img = to_gray(img)
     satir, sutun = gri_img.shape
     sonuc_img = np.zeros((satir, sutun), dtype=np.uint8)

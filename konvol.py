@@ -1,11 +1,9 @@
 import numpy as np
 
 def uygula(img, boyut=3):
-    """NxN ortalama filtre konvolusyonu (mean filter, sifirdan, donguyle).
-    Renkli goruntu girdisi: her kanal (B, G, R) ayri ayri filtrelenir."""
     boyut = int(boyut)
     if boyut % 2 == 0:
-        boyut += 1          # Filtre boyutu tek olmali
+        boyut += 1
 
     satir, sutun, kanal_sayisi = img.shape
     f_boyut = boyut
@@ -13,17 +11,13 @@ def uygula(img, boyut=3):
 
     sonuc_img = np.zeros((satir, sutun, kanal_sayisi), dtype=np.uint8)
 
-    # Her renk kanali icin ayri ayri konvolusyon uygula
     for k in range(kanal_sayisi):
 
-        # --- Adim 1: Padding (kenar doldurma) ---
-        # Goruntunun etrafini sifirla sararak filtre kenardan tasmasi engellenir
         paddli_img = np.zeros((satir + 2 * pay, sutun + 2 * pay), dtype=np.float64)
         for i in range(satir):
             for j in range(sutun):
                 paddli_img[i + pay, j + pay] = img[i, j, k]
 
-        # --- Adim 2: Konvolusyon (piksel piksel, pencere ortalamasi) ---
         for i in range(satir):
             for j in range(sutun):
                 toplam = 0.0

@@ -1,12 +1,10 @@
 import numpy as np
 
 def uygula(img):
-    """RGB kanal bazli histogram analizi. Her kanal icin ayri piksel dagilimini gosterir."""
     import matplotlib.pyplot as plt
 
     satir, sutun = img.shape[:2]
 
-    # --- Her kanal icin ayri sayac (OpenCV BGR sirasi: 0=B, 1=G, 2=R) ---
     hist_b = [0] * 256
     hist_g = [0] * 256
     hist_r = [0] * 256
@@ -17,7 +15,6 @@ def uygula(img):
             hist_g[img[i, j, 1]] += 1
             hist_r[img[i, j, 2]] += 1
 
-    # --- Grafik: uc kanal tek eksende, renkleriyle ---
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.plot(range(256), hist_r, color='red',   alpha=0.8, label='Kirmizi (R)')
     ax.plot(range(256), hist_g, color='green', alpha=0.8, label='Yesil (G)')

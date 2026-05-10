@@ -7,21 +7,18 @@ import numpy as np
 from PIL import Image, ImageTk
 
 def to_photoimage(img_array, max_size=400):
-    """NumPy dizisini Tkinter PhotoImage'e çevirir."""
     if img_array.dtype != np.uint8:
         img_array = np.clip(img_array, 0, 255).astype(np.uint8)
     if img_array.ndim == 2:
         pil_img = Image.fromarray(img_array, mode='L')
     else:
-        pil_img = Image.fromarray(img_array[:, :, ::-1])  # BGR -> RGB
+        pil_img = Image.fromarray(img_array[:, :, ::-1])
     w, h = pil_img.size
     if max(w, h) > max_size:
         scale = max_size / max(w, h)
         pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.NEAREST)
     return ImageTk.PhotoImage(pil_img)
 
-# ── İşlem tanımları ──────────────────────────────────────────────────────────
-# Her işlem: (modül_adı, [(etiket, varsayılan), ...])
 ISLEMLER = {
     "1. Gri Dönüşüm":              ("gri",       []),
     "2. Binary Dönüşüm":           ("binary",    [("Eşik (0-255)", "128")]),
@@ -46,8 +43,8 @@ class Uygulama:
         self.pencere = pencere
         pencere.title("Görüntü İşleme Görselleştirme")
         pencere.configure(bg="#2b2b2b")
-        self.img        = None   # cv2 BGR görüntü (1. resim)
-        self.img2       = None   # cv2 BGR görüntü (2. resim — yalnızca aritmetik)
+        self.img        = None
+        self.img2       = None
         self.photo_ori  = None
         self.photo_ori2 = None
         self.photo_son  = None
@@ -60,7 +57,6 @@ class Uygulama:
         bg  = "#2b2b2b"
         fg  = "#ffffff"
 
-        # ── Üst çubuk ────────────────────────────────────────────────────────
         ust = tk.Frame(p, bg=bg, pady=6)
         ust.pack(fill="x", padx=10)
 
@@ -78,38 +74,32 @@ class Uygulama:
                   bg="#27ae60", fg="white", relief="flat", padx=10, pady=4
                   ).pack(side="left", padx=4)
 
-        # ── Görüntü panelleri ─────────────────────────────────────────────────
         self.panel = tk.Frame(p, bg=bg)
         self.panel.pack(fill="both", expand=True, padx=10, pady=6)
 
-        # 1. resim paneli
         sol = tk.Frame(self.panel, bg="#1e1e1e", bd=1, relief="solid")
         sol.pack(side="left", fill="both", expand=True, padx=4)
         tk.Label(sol, text="Orijinal", bg="#1e1e1e", fg="#aaaaaa").pack()
         self.sol_label = tk.Label(sol, bg="#1e1e1e")
         self.sol_label.pack(expand=True)
 
-        # 2. resim paneli (yalnızca aritmetik modunda görünür)
         self.ikinci_panel = tk.Frame(self.panel, bg="#1e1e1e", bd=1, relief="solid")
         tk.Label(self.ikinci_panel, text="2. Resim", bg="#1e1e1e", fg="#aaaaaa").pack()
         self.ikinci_label = tk.Label(self.ikinci_panel, bg="#1e1e1e")
         self.ikinci_label.pack(expand=True)
 
-        # Sonuç paneli
         sag = tk.Frame(self.panel, bg="#1e1e1e", bd=1, relief="solid")
         sag.pack(side="left", fill="both", expand=True, padx=4)
         tk.Label(sag, text="Sonuç", bg="#1e1e1e", fg="#aaaaaa").pack()
         self.sag_label = tk.Label(sag, bg="#1e1e1e")
         self.sag_label.pack(expand=True)
 
-        # ── Parametre alanı ───────────────────────────────────────────────────
         self.param_cerceve = tk.Frame(p, bg=bg, pady=6)
         self.param_cerceve.pack(fill="x", padx=10)
 
         self.parametre_guncelle()
 
     def parametre_guncelle(self, *_):
-        """Seçilen işleme göre Entry kutularını ve ikinci resim alanını yeniden oluştur."""
         for w in self.param_cerceve.winfo_children():
             w.destroy()
         self.entry_widgets.clear()
@@ -117,7 +107,6 @@ class Uygulama:
         islem_adi = self.secim.get()
         modul_adi, parametreler = ISLEMLER[islem_adi]
 
-        # Aritmetik seçiliyse: ikinci resim panelini ve yükleme butonunu göster
         if modul_adi == "aritmetik":
             self.ikinci_panel.pack(side="left", fill="both", expand=True, padx=4,
                                    before=self.panel.winfo_children()[-1])
@@ -161,7 +150,6 @@ class Uygulama:
         self.sag_label.configure(image="")
 
     def resim_yukle2(self):
-        """Yalnızca aritmetik işlem için ikinci resmi yükler."""
         dosya = filedialog.askopenfilename(
             filetypes=[("Görüntü dosyaları", "*.jpg *.jpeg *.png *.bmp *.tiff")])
         if not dosya:
@@ -181,7 +169,6 @@ class Uygulama:
         islem_adi = self.secim.get()
         modul_adi, parametreler = ISLEMLER[islem_adi]
 
-        # Parametreleri oku
         kwargs = {}
         try:
             for (etiket, entry), param in zip(self.entry_widgets, parametreler):
@@ -192,13 +179,11 @@ class Uygulama:
             messagebox.showerror("Parametre Hatası", str(ex))
             return
 
-        # Modülü yükle ve uygula
         try:
             modul = importlib.import_module(modul_adi)
             importlib.reload(modul)
 
             if modul_adi == "aritmetik":
-                # Aritmetik: iki resim gerekli
                 if self.img2 is None:
                     messagebox.showwarning("Uyarı", "Aritmetik işlem için 2. resmi yükleyin.")
                     return
@@ -247,7 +232,6 @@ class Uygulama:
         return harita.get(modul, {}).get(etiket, etiket)
 
     def _tip_donustur(self, modul, kwargs):
-        """String değerleri uygun tipe çevir."""
         str_parametreler = {"mod", "islem"}
         sonuc = {}
         for k, v in kwargs.items():
@@ -261,7 +245,6 @@ class Uygulama:
         return sonuc
 
     def _yakinlastirma_penceresi_goster(self, sonuc):
-        """Yakınlaştırma/uzaklaştırma sonucunu gerçek boyutunda ayrı pencerede gösterir."""
         pencere = tk.Toplevel(self.pencere)
         pencere.configure(bg="#1e1e1e")
 
@@ -272,17 +255,14 @@ class Uygulama:
 
         pencere.title(f"Yakınlaştırma Sonucu  |  {ori_w}×{ori_h}  →  {son_w}×{son_h}  (×{olcek_x:.2f})")
 
-        # Ekran boyutunu al, pencereyi sığdır
         ekran_gen = self.pencere.winfo_screenwidth()
         ekran_yuk = self.pencere.winfo_screenheight()
-        kenar_bosluk = 80  # başlık çubuğu + bilgi alanı için
+        kenar_bosluk = 80
 
-        # Her panel için maksimum gösterim alanı (ekranın yarısına sığdır)
         max_panel_gen = (ekran_gen - 60) // 2
         max_panel_yuk = ekran_yuk - kenar_bosluk - 100
 
         def panel_boyutla(img_array):
-            """Görüntüyü panel sınırlarına sığacak şekilde PIL'e çevirir."""
             if img_array.dtype != np.uint8:
                 img_array = np.clip(img_array, 0, 255).astype(np.uint8)
             if img_array.ndim == 2:
@@ -290,7 +270,7 @@ class Uygulama:
             else:
                 pil = Image.fromarray(img_array[:, :, ::-1])
             w, h = pil.size
-            oran = min(max_panel_gen / w, max_panel_yuk / h, 1.0)  # büyütme yok
+            oran = min(max_panel_gen / w, max_panel_yuk / h, 1.0)
             if oran < 1.0:
                 pil = pil.resize((int(w * oran), int(h * oran)), Image.NEAREST)
             return ImageTk.PhotoImage(pil), pil.size
@@ -298,53 +278,45 @@ class Uygulama:
         photo_ori, (go_w, go_h) = panel_boyutla(self.img)
         photo_son, (gs_w, gs_h) = panel_boyutla(sonuc)
 
-        # Pencere boyutu: iki panel yan yana + boşluklar
         pen_gen = go_w + gs_w + 60
         pen_yuk = max(go_h, gs_h) + kenar_bosluk
-        # Ekrana sığdır
         pen_gen = min(pen_gen, ekran_gen - 40)
         pen_yuk = min(pen_yuk, ekran_yuk - 60)
 
-        # Ekranın ortasına konumlandır
         x = (ekran_gen - pen_gen) // 2
         y = (ekran_yuk - pen_yuk) // 2
         pencere.geometry(f"{pen_gen}x{pen_yuk}+{x}+{y}")
 
-        # İçerik çerçevesi
         cerceve = tk.Frame(pencere, bg="#1e1e1e")
         cerceve.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Orijinal panel
         sol = tk.Frame(cerceve, bg="#2b2b2b", bd=1, relief="solid")
         sol.pack(side="left", fill="both", expand=True, padx=(0, 5))
         tk.Label(sol, text=f"Orijinal  {ori_w}×{ori_h}",
                  bg="#2b2b2b", fg="#aaaaaa", font=("Helvetica", 10, "bold")).pack(pady=(6, 2))
         lbl_ori = tk.Label(sol, image=photo_ori, bg="#2b2b2b")
-        lbl_ori.image = photo_ori  # referans tut
+        lbl_ori.image = photo_ori
         lbl_ori.pack(padx=6, pady=(0, 6))
 
-        # Sonuç paneli
         sag = tk.Frame(cerceve, bg="#2b2b2b", bd=1, relief="solid")
         sag.pack(side="left", fill="both", expand=True, padx=(5, 0))
         tk.Label(sag, text=f"Sonuç  {son_w}×{son_h}  (ölçek ×{olcek_x:.2f})",
                  bg="#2b2b2b", fg="#27ae60", font=("Helvetica", 10, "bold")).pack(pady=(6, 2))
         lbl_son = tk.Label(sag, image=photo_son, bg="#2b2b2b")
-        lbl_son.image = photo_son  # referans tut
+        lbl_son.image = photo_son
         lbl_son.pack(padx=6, pady=(0, 6))
 
-        # Ana panelde de küçük önizleme göster
         self.photo_son = to_photoimage(sonuc)
         self.sag_label.configure(image=self.photo_son)
 
     def _morfoloji_penceresi_goster(self, sonuclar):
-        """Dört morfolojik işlem sonucunu 2×2 grid'de ayrı pencerede gösterir."""
         pencere = tk.Toplevel(self.pencere)
         pencere.title("Morfolojik İşlemler")
         pencere.configure(bg="#1e1e1e")
 
         basliklar = ['Genişleme', 'Aşınma', 'Açma', 'Kapama']
 
-        self._morfoloji_photos = []  # PhotoImage referanslarını tut
+        self._morfoloji_photos = []
 
         for idx, baslik in enumerate(basliklar):
             satir_idx = idx // 2
@@ -365,17 +337,15 @@ class Uygulama:
         pencere.columnconfigure(0, weight=1)
         pencere.columnconfigure(1, weight=1)
 
-        # Ana panelde genişleme sonucunu önizleme olarak göster
         self.photo_son = to_photoimage(sonuclar['Genişleme'])
         self.sag_label.configure(image=self.photo_son)
 
     def _renk_penceresi_goster(self, sonuclar, baslik="Kanal Görünümleri"):
-        """Verilen görüntü sözlüğünü etiketli, yan yana ayrı pencerede gösterir."""
         pencere = tk.Toplevel(self.pencere)
         pencere.title(baslik)
         pencere.configure(bg="#1e1e1e")
 
-        self._renk_photos = []  # PhotoImage referanslarını tut
+        self._renk_photos = []
 
         for idx, (baslik, kanal_img) in enumerate(sonuclar.items()):
             cerceve = tk.Frame(pencere, bg="#2b2b2b", bd=1, relief="solid")
@@ -392,7 +362,6 @@ class Uygulama:
 
             pencere.columnconfigure(idx, weight=1)
 
-        # Ana panelde ilk kanalı önizleme olarak göster
         ilk_kanal = list(sonuclar.values())[0]
         self.photo_son = to_photoimage(ilk_kanal)
         self.sag_label.configure(image=self.photo_son)
